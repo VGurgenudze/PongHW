@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { socket } from "../socket";
-import type { GameState } from "../shared/types";
+import type { GameState } from "../shared/types"; 
 
 
 
@@ -16,6 +16,18 @@ export const GameCanvas = () => {
 
     return () => {
       socket.off("gameState");
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleGameOver = ({ winner }: { winner: string }) => {
+      alert(winner === socket.id ? "🎉 You Win!" : "😞 You Lose!");
+      window.location.reload(); // Or navigate to a results screen
+    };
+
+    socket.on("gameOver", handleGameOver);
+    return () => {
+      socket.off("gameOver", handleGameOver);
     };
   }, []);
 
@@ -53,5 +65,12 @@ export const GameCanvas = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, []);
 
-  return <canvas ref={canvasRef} width={600} height={400} style={{ border: "2px solid white" }} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      width={600}
+      height={400}
+      style={{ border: "2px solid white" }}
+    />
+  );
 };

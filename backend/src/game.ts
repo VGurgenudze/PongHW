@@ -1,18 +1,18 @@
 import { Server } from "socket.io";
 import type { GameState } from "../../shared/types";
 
-
-
-
 type Player = { id: string; paddleY: number };
 
 class GameRoomManager {
   private io: Server | null = null;
-  private rooms: Record<string, {
-    players: Player[];
-    state: GameState;
-    interval?: NodeJS.Timeout;
-  }> = {};
+  private rooms: Record<
+    string,
+    {
+      players: Player[];
+      state: GameState;
+      interval?: NodeJS.Timeout;
+    }
+  > = {};
 
   setServer(io: Server) {
     this.io = io;
@@ -45,7 +45,7 @@ class GameRoomManager {
 
   handleInput(roomId: string, playerId: string, direction: "up" | "down") {
     const room = this.rooms[roomId];
-    const player = room.players.find(p => p.id === playerId);
+    const player = room.players.find((p) => p.id === playerId);
     if (!player) return;
 
     const movement = direction === "up" ? -10 : 10;
@@ -54,10 +54,12 @@ class GameRoomManager {
 
   startGame(roomId: string) {
     const room = this.rooms[roomId];
-    let dx = 4, dy = 3;
+    let dx = 4,
+      dy = 3;
 
     room.interval = setInterval(() => {
       const state = room.state;
+      const [left, right] = room.players;
 
       // Ball movement
       state.ball.x += dx;
@@ -67,19 +69,19 @@ class GameRoomManager {
       if (state.ball.y <= 0 || state.ball.y >= 400) dy *= -1;
 
       // Paddle collisions
-      const [left, right] = room.players;
-
       if (
         state.ball.x <= 20 &&
         state.ball.y >= left?.paddleY &&
         state.ball.y <= (left?.paddleY ?? 0) + 100
-      ) dx *= -1;
+      )
+        dx *= -1;
 
       if (
         state.ball.x >= 580 &&
         state.ball.y >= right?.paddleY &&
         state.ball.y <= (right?.paddleY ?? 0) + 100
-      ) dx *= -1;
+      )
+        dx *= -1;
 
       // Score update
       if (state.ball.x < 0) {
@@ -88,6 +90,18 @@ class GameRoomManager {
       } else if (state.ball.x > 600) {
         state.score.left += 1;
         state.ball = { x: 300, y: 200 };
+      }
+
+      // Check for game over
+      if (state.score.left >= 5 || state.score.right >= 5) {
+        const winner =
+          state.score.left >= 5 ? room.players[0]?.id : room.players[1]?.id;
+
+        this.io?.to(roomId).emit("gameOver", { winner });
+
+        if (room.interval) clearInterval(room.interval);
+        delete this.rooms[roomId];
+        return;
       }
 
       // Sync paddle positions
@@ -101,7 +115,7 @@ class GameRoomManager {
 
   removePlayer(playerId: string) {
     for (const [roomId, room] of Object.entries(this.rooms)) {
-      const index = room.players.findIndex(p => p.id === playerId);
+      const index = room.players.findIndex((p) => p.id === playerId);
       if (index !== -1) {
         room.players.splice(index, 1);
         if (room.interval) clearInterval(room.interval);
