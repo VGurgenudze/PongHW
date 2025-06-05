@@ -5,6 +5,7 @@ type Player = { id: string; paddleY: number };
 
 class GameRoomManager {
   private io: Server | null = null;
+
   private rooms: Record<
     string,
     {
@@ -36,10 +37,6 @@ class GameRoomManager {
     room.players.push({ id: playerId, paddleY: 150 });
     this.rooms[roomId] = room;
 
-    if (room.players.length === 2) {
-      this.startGame(roomId);
-    }
-
     return roomId;
   }
 
@@ -54,8 +51,7 @@ class GameRoomManager {
 
   startGame(roomId: string) {
     const room = this.rooms[roomId];
-    let dx = 4,
-      dy = 3;
+    let dx = 4, dy = 3;
 
     room.interval = setInterval(() => {
       const state = room.state;
@@ -73,15 +69,13 @@ class GameRoomManager {
         state.ball.x <= 20 &&
         state.ball.y >= left?.paddleY &&
         state.ball.y <= (left?.paddleY ?? 0) + 100
-      )
-        dx *= -1;
+      ) dx *= -1;
 
       if (
         state.ball.x >= 580 &&
         state.ball.y >= right?.paddleY &&
         state.ball.y <= (right?.paddleY ?? 0) + 100
-      )
-        dx *= -1;
+      ) dx *= -1;
 
       // Score update
       if (state.ball.x < 0) {
@@ -122,6 +116,21 @@ class GameRoomManager {
         delete this.rooms[roomId];
       }
     }
+  }
+
+  // ✅ ADD THIS:
+  getRoom(roomId: string) {
+    return this.rooms[roomId];
+  }
+
+  // 🔄 Optional helper for finding player’s room
+  getPlayerRoom(playerId: string): string | null {
+    for (const [roomId, room] of Object.entries(this.rooms)) {
+      if (room.players.some((p) => p.id === playerId)) {
+        return roomId;
+      }
+    }
+    return null;
   }
 }
 
